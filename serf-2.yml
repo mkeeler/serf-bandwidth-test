@@ -1,0 +1,33 @@
+version: '3.4'
+
+services:
+  server1:
+    command:
+      - "-bind"
+      - "{{ GetInterfaceIP \"eth0\"}}:9000"
+      - "-join"
+      - "server2:9000"
+      - "-bind"
+      - "{{ GetInterfaceIP \"eth0\"}}:9001"
+      - "-join"
+      - "server2:9001"
+  server2:
+    command:
+      - "-bind"
+      - "{{ GetInterfaceIP \"eth0\"}}:9000"
+      - "-join"
+      - "server3:9000"
+      - "-bind"
+      - "{{ GetInterfaceIP \"eth0\"}}:9001"
+      - "-join"
+      - "server3:9001"
+  server3:
+    command:
+      - "-bind"
+      - "{{ GetInterfaceIP \"eth0\"}}:9000"
+      - "-join"
+      - "server1:9000"
+      - "-bind"
+      - "{{ GetInterfaceIP \"eth0\"}}:9001"
+      - "-join"
+      - "server1:9001"

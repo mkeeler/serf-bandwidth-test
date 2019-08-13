@@ -1,0 +1,717 @@
+{
+	"meta": {
+		"chronografVersion": "1.7.12",
+		"sources": {
+			"0": {
+				"name": "http://influxdb:8086",
+				"link": "/chronograf/v1/sources/0"
+			}
+		}
+	},
+	"dashboard": {
+		"id": 1,
+		"cells": [
+			{
+				"i": "152102e4-5c41-4b87-ae9e-bcc142c430ed",
+				"x": 10,
+				"y": 4,
+				"w": 2,
+				"h": 13,
+				"name": "Average Bit Rate",
+				"queries": [
+					{
+						"query": "totalBits = (tables=<-) => \n  tables \n    |> group(columns: [\"name\"], mode: \"by\")\n    |> map(fn: (r) => ({\n        _time: r._time,\n        name: r.name,\n        _value: (r.tx_bytes + r.rx_bytes)*8\n        })\n      )\n      \nbitRate = (tables=<-) =>\n  join(tables: {\"first\": tables |> first(), \"last\": tables |> last()}, on: [\"name\"], method: \"inner\")\n    |> map(fn: (r) => ({\n        name: r.name\n        elapsed: uint(v: r._time_last) - (uint(v: r._time_first)\n        bits: r._value_last - r._value_first\n      })\n    )\n    |> map(fn: (r) => ({\n        elapsed: r.elapsed / uint(v: 1000000000)\n        bits: uint(v: r.bits)\n      })\n    )\n    |> map(fn: (r) => ({\n        name: r.name\n        kbps: float(v: r.bits / r.elapsed) / 1024.0\n      })\n    )\n    |> group(columns: [\"\"], mode: \"by\")\n    |> drop(columns: [\"elapsed\"])\n    \nserverBitRates = from(bucket: \"telegraf\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r.role == \"server\" and r._measurement == \"docker_container_net\" )\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> rename(columns: {\"servername\": \"name\"})\n  |> totalBits()\n  |> bitRate()\n\n\nclientBitRates = from(bucket: \"telegraf\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r.role == \"client\" and r._measurement == \"docker_container_net\" )\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> rename(columns: {\"container_name\": \"name\"})\n  |> totalBits()  \n  |> bitRate()\n  \n\n//serverBitRates\nunion(tables: [serverBitRates, clientBitRates])\n",
+						"queryConfig": {
+							"database": "",
+							"measurement": "",
+							"retentionPolicy": "",
+							"fields": [],
+							"tags": {},
+							"groupBy": {
+								"time": "",
+								"tags": []
+							},
+							"areTagsAccepted": false,
+							"rawText": "totalBits = (tables=<-) => \n  tables \n    |> group(columns: [\"name\"], mode: \"by\")\n    |> map(fn: (r) => ({\n        _time: r._time,\n        name: r.name,\n        _value: (r.tx_bytes + r.rx_bytes)*8\n        })\n      )\n      \nbitRate = (tables=<-) =>\n  join(tables: {\"first\": tables |> first(), \"last\": tables |> last()}, on: [\"name\"], method: \"inner\")\n    |> map(fn: (r) => ({\n        name: r.name\n        elapsed: uint(v: r._time_last) - (uint(v: r._time_first)\n        bits: r._value_last - r._value_first\n      })\n    )\n    |> map(fn: (r) => ({\n        elapsed: r.elapsed / uint(v: 1000000000)\n        bits: uint(v: r.bits)\n      })\n    )\n    |> map(fn: (r) => ({\n        name: r.name\n        kbps: float(v: r.bits / r.elapsed) / 1024.0\n      })\n    )\n    |> group(columns: [\"\"], mode: \"by\")\n    |> drop(columns: [\"elapsed\"])\n    \nserverBitRates = from(bucket: \"telegraf\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r.role == \"server\" and r._measurement == \"docker_container_net\" )\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> rename(columns: {\"servername\": \"name\"})\n  |> totalBits()\n  |> bitRate()\n\n\nclientBitRates = from(bucket: \"telegraf\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r.role == \"client\" and r._measurement == \"docker_container_net\" )\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> rename(columns: {\"container_name\": \"name\"})\n  |> totalBits()  \n  |> bitRate()\n  \n\n//serverBitRates\nunion(tables: [serverBitRates, clientBitRates])\n",
+							"range": null,
+							"shifts": null
+						},
+						"source": "",
+						"type": "flux"
+					}
+				],
+				"axes": {
+					"x": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "",
+						"base": "10",
+						"scale": "linear"
+					},
+					"y": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "",
+						"base": "2",
+						"scale": "linear"
+					},
+					"y2": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "",
+						"base": "10",
+						"scale": "linear"
+					}
+				},
+				"type": "table",
+				"colors": [
+					{
+						"id": "base",
+						"type": "text",
+						"hex": "#00C9FF",
+						"name": "laser",
+						"value": "-1000000000000000000"
+					}
+				],
+				"legend": {},
+				"tableOptions": {
+					"verticalTimeAxis": true,
+					"sortBy": {
+						"internalName": "time",
+						"displayName": "",
+						"visible": true
+					},
+					"wrapping": "truncate",
+					"fixFirstColumn": true
+				},
+				"fieldOptions": [
+					{
+						"internalName": "name",
+						"displayName": "",
+						"visible": true
+					},
+					{
+						"internalName": "kbps",
+						"displayName": "",
+						"visible": true
+					}
+				],
+				"timeFormat": "MM/DD/YYYY HH:mm:ss",
+				"decimalPlaces": {
+					"isEnforced": true,
+					"digits": 2
+				},
+				"note": "",
+				"noteVisibility": "default",
+				"links": {
+					"self": "/chronograf/v1/dashboards/1/cells/152102e4-5c41-4b87-ae9e-bcc142c430ed"
+				}
+			},
+			{
+				"i": "d1bd22be-58c1-43bb-b08a-47827e769866",
+				"x": 7,
+				"y": 0,
+				"w": 5,
+				"h": 4,
+				"name": "Memory Utilization",
+				"queries": [
+					{
+						"query": "from(bucket: \"telegraf\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r._measurement == \"docker_container_mem\" and r._field == \"usage\")\n  |> filter(fn: (r) => r.role == \"client\" or r.role == \"server\")",
+						"queryConfig": {
+							"database": "",
+							"measurement": "",
+							"retentionPolicy": "",
+							"fields": [],
+							"tags": {},
+							"groupBy": {
+								"time": "",
+								"tags": []
+							},
+							"areTagsAccepted": false,
+							"rawText": "from(bucket: \"telegraf\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r._measurement == \"docker_container_mem\" and r._field == \"usage\")\n  |> filter(fn: (r) => r.role == \"client\" or r.role == \"server\")",
+							"range": null,
+							"shifts": null
+						},
+						"source": "",
+						"type": "flux"
+					}
+				],
+				"axes": {
+					"x": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "",
+						"base": "10",
+						"scale": "linear"
+					},
+					"y": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "B",
+						"base": "2",
+						"scale": "linear"
+					},
+					"y2": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "",
+						"base": "10",
+						"scale": "linear"
+					}
+				},
+				"type": "line",
+				"colors": [
+					{
+						"id": "a80b2bf3-8b0c-482c-8e1d-92363d9c45d4",
+						"type": "scale",
+						"hex": "#31C0F6",
+						"name": "Nineteen Eighty Four",
+						"value": "0"
+					},
+					{
+						"id": "b4e99a8c-cdd2-4244-9cd4-039fbc0b882e",
+						"type": "scale",
+						"hex": "#A500A5",
+						"name": "Nineteen Eighty Four",
+						"value": "0"
+					},
+					{
+						"id": "a3f392d8-067e-4406-826e-68584d642d49",
+						"type": "scale",
+						"hex": "#FF7E27",
+						"name": "Nineteen Eighty Four",
+						"value": "0"
+					}
+				],
+				"legend": {},
+				"tableOptions": {
+					"verticalTimeAxis": true,
+					"sortBy": {
+						"internalName": "time",
+						"displayName": "",
+						"visible": true
+					},
+					"wrapping": "truncate",
+					"fixFirstColumn": true
+				},
+				"fieldOptions": [
+					{
+						"internalName": "time",
+						"displayName": "",
+						"visible": true
+					}
+				],
+				"timeFormat": "MM/DD/YYYY HH:mm:ss",
+				"decimalPlaces": {
+					"isEnforced": true,
+					"digits": 2
+				},
+				"note": "",
+				"noteVisibility": "default",
+				"links": {
+					"self": "/chronograf/v1/dashboards/1/cells/d1bd22be-58c1-43bb-b08a-47827e769866"
+				}
+			},
+			{
+				"i": "a5dde0d7-e69d-4ff7-acdc-d4dff43649e2",
+				"x": 2,
+				"y": 0,
+				"w": 5,
+				"h": 4,
+				"name": "CPU Utilization",
+				"queries": [
+					{
+						"query": "from(bucket: \"telegraf\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r._measurement == \"docker_container_cpu\" and r._field == \"usage_percent\")\n  |> filter(fn: (r) => r.role == \"server\" or r.role == \"client\")\n  |> keep(columns: [\"_time\", \"_value\", \"container_name\"])",
+						"queryConfig": {
+							"database": "",
+							"measurement": "",
+							"retentionPolicy": "",
+							"fields": [],
+							"tags": {},
+							"groupBy": {
+								"time": "",
+								"tags": []
+							},
+							"areTagsAccepted": false,
+							"rawText": "from(bucket: \"telegraf\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r._measurement == \"docker_container_cpu\" and r._field == \"usage_percent\")\n  |> filter(fn: (r) => r.role == \"server\" or r.role == \"client\")\n  |> keep(columns: [\"_time\", \"_value\", \"container_name\"])",
+							"range": null,
+							"shifts": null
+						},
+						"source": "",
+						"type": "flux"
+					}
+				],
+				"axes": {
+					"x": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "",
+						"base": "10",
+						"scale": "linear"
+					},
+					"y": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "%",
+						"base": "raw",
+						"scale": "linear"
+					},
+					"y2": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "",
+						"base": "10",
+						"scale": "linear"
+					}
+				},
+				"type": "line-stepplot",
+				"colors": [
+					{
+						"id": "a80b2bf3-8b0c-482c-8e1d-92363d9c45d4",
+						"type": "scale",
+						"hex": "#31C0F6",
+						"name": "Nineteen Eighty Four",
+						"value": "0"
+					},
+					{
+						"id": "b4e99a8c-cdd2-4244-9cd4-039fbc0b882e",
+						"type": "scale",
+						"hex": "#A500A5",
+						"name": "Nineteen Eighty Four",
+						"value": "0"
+					},
+					{
+						"id": "a3f392d8-067e-4406-826e-68584d642d49",
+						"type": "scale",
+						"hex": "#FF7E27",
+						"name": "Nineteen Eighty Four",
+						"value": "0"
+					}
+				],
+				"legend": {},
+				"tableOptions": {
+					"verticalTimeAxis": true,
+					"sortBy": {
+						"internalName": "time",
+						"displayName": "",
+						"visible": true
+					},
+					"wrapping": "truncate",
+					"fixFirstColumn": true
+				},
+				"fieldOptions": [
+					{
+						"internalName": "time",
+						"displayName": "",
+						"visible": true
+					}
+				],
+				"timeFormat": "MM/DD/YYYY HH:mm:ss",
+				"decimalPlaces": {
+					"isEnforced": true,
+					"digits": 2
+				},
+				"note": "",
+				"noteVisibility": "default",
+				"links": {
+					"self": "/chronograf/v1/dashboards/1/cells/a5dde0d7-e69d-4ff7-acdc-d4dff43649e2"
+				}
+			},
+			{
+				"i": "fff1f82e-b758-40cd-b185-8d72e4afd5cc",
+				"x": 0,
+				"y": 0,
+				"w": 2,
+				"h": 4,
+				"name": "Running Containers",
+				"queries": [
+					{
+						"query": "from(bucket: \"telegraf/autogen\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r._measurement == \"docker\" and (r._field == \"n_containers_running\"))",
+						"queryConfig": {
+							"database": "",
+							"measurement": "",
+							"retentionPolicy": "",
+							"fields": [],
+							"tags": {},
+							"groupBy": {
+								"time": "",
+								"tags": []
+							},
+							"areTagsAccepted": false,
+							"rawText": "from(bucket: \"telegraf/autogen\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r._measurement == \"docker\" and (r._field == \"n_containers_running\"))",
+							"range": null,
+							"shifts": null
+						},
+						"source": "/chronograf/v1/sources/0",
+						"type": "flux"
+					}
+				],
+				"axes": {
+					"x": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "",
+						"base": "10",
+						"scale": "linear"
+					},
+					"y": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "Server Network Utilization",
+						"prefix": "",
+						"suffix": "",
+						"base": "2",
+						"scale": "linear"
+					},
+					"y2": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "",
+						"base": "10",
+						"scale": "linear"
+					}
+				},
+				"type": "line-plus-single-stat",
+				"colors": [
+					{
+						"id": "base",
+						"type": "scale",
+						"hex": "#31C0F6",
+						"name": "Nineteen Eighty Four",
+						"value": "0"
+					},
+					{
+						"id": "d632061f-2a35-43fa-9929-f1b9a5b61457",
+						"type": "scale",
+						"hex": "#A500A5",
+						"name": "Nineteen Eighty Four",
+						"value": "0"
+					},
+					{
+						"id": "73f181b3-2e8a-43a0-a02b-b508b745815e",
+						"type": "scale",
+						"hex": "#FF7E27",
+						"name": "Nineteen Eighty Four",
+						"value": "0"
+					}
+				],
+				"legend": {},
+				"tableOptions": {
+					"verticalTimeAxis": true,
+					"sortBy": {
+						"internalName": "time",
+						"displayName": "",
+						"visible": true
+					},
+					"wrapping": "truncate",
+					"fixFirstColumn": true
+				},
+				"fieldOptions": [
+					{
+						"internalName": "time",
+						"displayName": "",
+						"visible": true
+					}
+				],
+				"timeFormat": "MM/DD/YYYY HH:mm:ss",
+				"decimalPlaces": {
+					"isEnforced": true,
+					"digits": 2
+				},
+				"note": "",
+				"noteVisibility": "default",
+				"links": {
+					"self": "/chronograf/v1/dashboards/1/cells/fff1f82e-b758-40cd-b185-8d72e4afd5cc"
+				}
+			},
+			{
+				"i": "8a9e9ba5-91e7-42f1-8fa8-a7b6c6288b17",
+				"x": 0,
+				"y": 4,
+				"w": 10,
+				"h": 7,
+				"name": "Server Utilization",
+				"queries": [
+					{
+						"query": "\nfrom(bucket: \"telegraf\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r.role == \"server\" and r._measurement == \"docker_container_net\" )\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> rename(columns: {\"servername\": \"name\"})\n  |> group(columns: [\"name\"], mode:\"by\")\n  |> map(fn: (r) => ({\n      _time: r._time,\n      name: r.name,\n      total_bits: (r.tx_bytes + r.rx_bytes)*8\n      })\n    )\n  |> derivative(unit: 1s, nonNegative: false, columns: [\"total_bits\"])\n\n\n",
+						"queryConfig": {
+							"database": "",
+							"measurement": "",
+							"retentionPolicy": "",
+							"fields": [],
+							"tags": {},
+							"groupBy": {
+								"time": "",
+								"tags": []
+							},
+							"areTagsAccepted": false,
+							"rawText": "\nfrom(bucket: \"telegraf\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r.role == \"server\" and r._measurement == \"docker_container_net\" )\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> rename(columns: {\"servername\": \"name\"})\n  |> group(columns: [\"name\"], mode:\"by\")\n  |> map(fn: (r) => ({\n      _time: r._time,\n      name: r.name,\n      total_bits: (r.tx_bytes + r.rx_bytes)*8\n      })\n    )\n  |> derivative(unit: 1s, nonNegative: false, columns: [\"total_bits\"])\n\n\n",
+							"range": null,
+							"shifts": null
+						},
+						"source": "/chronograf/v1/sources/0",
+						"type": "flux"
+					}
+				],
+				"axes": {
+					"x": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "",
+						"base": "10",
+						"scale": "linear"
+					},
+					"y": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "Server Network Utilization",
+						"prefix": "",
+						"suffix": "bps",
+						"base": "2",
+						"scale": "linear"
+					},
+					"y2": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "",
+						"base": "10",
+						"scale": "linear"
+					}
+				},
+				"type": "line-stepplot",
+				"colors": [
+					{
+						"id": "15638ef9-ef49-4212-9259-fd7d868930ac",
+						"type": "scale",
+						"hex": "#DA6FF1",
+						"name": "Ectoplasm",
+						"value": "0"
+					},
+					{
+						"id": "e36faacf-e180-4581-9962-316504f8bf63",
+						"type": "scale",
+						"hex": "#00717A",
+						"name": "Ectoplasm",
+						"value": "0"
+					},
+					{
+						"id": "01d045b3-962a-48c7-9b15-dc66c210d0f1",
+						"type": "scale",
+						"hex": "#ACFF76",
+						"name": "Ectoplasm",
+						"value": "0"
+					}
+				],
+				"legend": {},
+				"tableOptions": {
+					"verticalTimeAxis": true,
+					"sortBy": {
+						"internalName": "time",
+						"displayName": "",
+						"visible": true
+					},
+					"wrapping": "truncate",
+					"fixFirstColumn": true
+				},
+				"fieldOptions": [
+					{
+						"internalName": "time",
+						"displayName": "",
+						"visible": true
+					}
+				],
+				"timeFormat": "MM/DD/YYYY HH:mm:ss",
+				"decimalPlaces": {
+					"isEnforced": true,
+					"digits": 2
+				},
+				"note": "",
+				"noteVisibility": "default",
+				"links": {
+					"self": "/chronograf/v1/dashboards/1/cells/8a9e9ba5-91e7-42f1-8fa8-a7b6c6288b17"
+				}
+			},
+			{
+				"i": "4e2a6701-1198-4e39-bc85-d89476900d3d",
+				"x": 0,
+				"y": 11,
+				"w": 10,
+				"h": 6,
+				"name": "Client Utilization",
+				"queries": [
+					{
+						"query": "\nfrom(bucket: \"telegraf\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r.role == \"client\" and r._measurement == \"docker_container_net\" )\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> rename(columns: {\"container_name\": \"name\"})\n  |> group(columns: [\"name\"], mode:\"by\")\n  |> map(fn: (r) => ({\n      _time: r._time,\n      name: r.name,\n      total_bits: ((r.tx_bytes + r.rx_bytes)*8)\n      })\n    )\n  |> derivative(unit: 1s, nonNegative: false, columns: [\"total_bits\"])\n\n\n",
+						"queryConfig": {
+							"database": "",
+							"measurement": "",
+							"retentionPolicy": "",
+							"fields": [],
+							"tags": {},
+							"groupBy": {
+								"time": "",
+								"tags": []
+							},
+							"areTagsAccepted": false,
+							"rawText": "\nfrom(bucket: \"telegraf\")\n  |> range(start: dashboardTime, stop: upperDashboardTime)\n  |> filter(fn: (r) => r.role == \"client\" and r._measurement == \"docker_container_net\" )\n  |> pivot(rowKey:[\"_time\"], columnKey: [\"_field\"], valueColumn: \"_value\")\n  |> rename(columns: {\"container_name\": \"name\"})\n  |> group(columns: [\"name\"], mode:\"by\")\n  |> map(fn: (r) => ({\n      _time: r._time,\n      name: r.name,\n      total_bits: ((r.tx_bytes + r.rx_bytes)*8)\n      })\n    )\n  |> derivative(unit: 1s, nonNegative: false, columns: [\"total_bits\"])\n\n\n",
+							"range": null,
+							"shifts": null
+						},
+						"source": "/chronograf/v1/sources/0",
+						"type": "flux"
+					}
+				],
+				"axes": {
+					"x": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "",
+						"base": "10",
+						"scale": "linear"
+					},
+					"y": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "Server Network Utilization",
+						"prefix": "",
+						"suffix": "bps",
+						"base": "2",
+						"scale": "linear"
+					},
+					"y2": {
+						"bounds": [
+							"",
+							""
+						],
+						"label": "",
+						"prefix": "",
+						"suffix": "",
+						"base": "10",
+						"scale": "linear"
+					}
+				},
+				"type": "line-stepplot",
+				"colors": [
+					{
+						"id": "15638ef9-ef49-4212-9259-fd7d868930ac",
+						"type": "scale",
+						"hex": "#DA6FF1",
+						"name": "Ectoplasm",
+						"value": "0"
+					},
+					{
+						"id": "e36faacf-e180-4581-9962-316504f8bf63",
+						"type": "scale",
+						"hex": "#00717A",
+						"name": "Ectoplasm",
+						"value": "0"
+					},
+					{
+						"id": "01d045b3-962a-48c7-9b15-dc66c210d0f1",
+						"type": "scale",
+						"hex": "#ACFF76",
+						"name": "Ectoplasm",
+						"value": "0"
+					}
+				],
+				"legend": {},
+				"tableOptions": {
+					"verticalTimeAxis": true,
+					"sortBy": {
+						"internalName": "time",
+						"displayName": "",
+						"visible": true
+					},
+					"wrapping": "truncate",
+					"fixFirstColumn": true
+				},
+				"fieldOptions": [
+					{
+						"internalName": "time",
+						"displayName": "",
+						"visible": true
+					}
+				],
+				"timeFormat": "MM/DD/YYYY HH:mm:ss",
+				"decimalPlaces": {
+					"isEnforced": true,
+					"digits": 2
+				},
+				"note": "",
+				"noteVisibility": "default",
+				"links": {
+					"self": "/chronograf/v1/dashboards/1/cells/4e2a6701-1198-4e39-bc85-d89476900d3d"
+				}
+			}
+		],
+		"templates": [],
+		"name": "Serf Testing",
+		"organization": "default",
+		"links": {
+			"self": "/chronograf/v1/dashboards/1",
+			"cells": "/chronograf/v1/dashboards/1/cells",
+			"templates": "/chronograf/v1/dashboards/1/templates"
+		}
+	}
+}

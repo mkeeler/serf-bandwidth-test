@@ -1,0 +1,160 @@
+version: '3.4'
+
+services:
+  server1:
+    build:
+      context: .
+      dockerfile: main.dockerfile
+    image: serf-test
+    hostname: "server1"
+    command:
+      - "-bind"
+      - "{{ GetInterfaceIP \"eth0\"}}:9000"
+      - "-join"
+      - "server2:9000"
+    labels:
+      role: server
+      servername: server1
+    depends_on:
+      - influxdb
+      - telegraf
+      - chronograf
+
+  server2:
+    build:
+      context: .
+      dockerfile: main.dockerfile
+    image: serf-test
+    hostname: "server2"
+    command:
+      - "-bind"
+      - "{{ GetInterfaceIP \"eth0\"}}:9000"
+      - "-join"
+      - "server3:9000"
+    labels:
+      role: server
+      servername: server2
+    depends_on:
+      - influxdb
+      - telegraf
+      - chronograf
+
+  server3:
+    build:
+      context: .
+      dockerfile: main.dockerfile
+    image: serf-test
+    hostname: "server3"
+    command:
+      - "-bind"
+      - "{{ GetInterfaceIP \"eth0\"}}:9000"
+      - "-join"
+      - "server1:9000"
+    labels:
+      role: server
+      servername: server3
+    depends_on:
+      - influxdb
+      - telegraf
+      - chronograf
+
+  client1:
+    build:
+      context: .
+      dockerfile: main.dockerfile
+    image: serf-test
+    command: [
+      "-bind", "{{ GetInterfaceIP \"eth0\"}}:9000",
+      "-join", "server1:9000"
+    ]
+    depends_on:
+      - server1
+      - server2
+      - server3
+    labels:
+      role: client
+      serf: "9000"
+
+  client2:
+    build:
+      context: .
+      dockerfile: main.dockerfile
+    image: serf-test
+    command: [
+      "-bind", "{{ GetInterfaceIP \"eth0\"}}:9000",
+      "-join", "server1:9001"
+    ]
+    depends_on:
+      - server1
+      - server2
+      - server3
+    labels:
+      role: client
+      serf: "9001"
+
+  client3:
+    build:
+      context: .
+      dockerfile: main.dockerfile
+    image: serf-test
+    command: [
+      "-bind", "{{ GetInterfaceIP \"eth0\"}}:9000",
+      "-join", "server1:9002"
+    ]
+    depends_on:
+      - server1
+      - server2
+      - server3
+    labels:
+      role: client
+      serf: "9002"
+
+  client4:
+    build:
+      context: .
+      dockerfile: main.dockerfile
+    image: serf-test
+    command: [
+      "-bind", "{{ GetInterfaceIP \"eth0\"}}:9000",
+      "-join", "server1:9003"
+    ]
+    depends_on:
+      - server1
+      - server2
+      - server3
+    labels:
+      role: client
+      serf: "9003"
+
+  influxdb:
+    image: influxdb
+    # image: quay.io/influxdb/influxdb:2.0.0-alpha
+    volumes:
+      - influx-data:/var/lib/influxdb
+      - ./influxdb.conf:/etc/influxdb/influxdb.conf:ro
+    ports:
+      - "8086:8086"
+      - "8083:8083"
+
+  telegraf:
+    image: telegraf
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    depends_on:
+      - influxdb
+
+  chronograf:
+    image: chronograf
+    volumes:
+      - chronograf-data:/var/lib/chronograf
+    ports:
+      - "8888:8888"
+    command: ["--influxdb-url=http://influxdb:8086"]
+    depends_on:
+      - influxdb
+      - telegraf
+
+volumes:
+  influx-data:
+  chronograf-data:
