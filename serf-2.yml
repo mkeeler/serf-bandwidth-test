@@ -4,13 +4,13 @@ services:
   server1:
     command:
       - "-bind"
-      - "{{ GetInterfaceIP \"eth0\"}}:9000"
-      - "-join"
-      - "server2:9000"
-      - "-bind"
-      - "{{ GetInterfaceIP \"eth0\"}}:9001"
-      - "-join"
-      - "server2:9001"
+      - "{{ GetInterfaceIP \"eth0\"}}:9000"
+      - "-join"
+      - "server2:9000"
+      - "-bind"
+      - "{{ GetInterfaceIP \"eth0\"}}:9001"
+      - "-join"
+      - "server2:9001"
   server2:
     command:
       - "-bind"
